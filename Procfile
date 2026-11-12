@@ -1,0 +1,1 @@
+worker: python vortex_run.py
