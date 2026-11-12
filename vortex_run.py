@@ -1010,10 +1010,31 @@ async def process_broadcast(message: types.Message, state: FSMContext):
 
     await status_msg.edit_text(f"✅ <b>Рассылка завершена!</b>\nДоставлено: <code>{sent:,}</code>\nБлок: <code>{failed:,}</code>")
 
-# ================= ЗАПУСК =================
+# =================== ЗАПУСК ===================
+from aiohttp import web
+import os
+import asyncio
+
+async def handle(request):
+    return web.Response(text="Bot is running!")
+
+async def web_server():
+    app = web.Application()
+    app.router.add_get("/", handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    await asyncio.Future()
+
 async def main():
-    print("🌌 Бот @quasar_drop_bot (канал @snoop_tons) успешно запущен!")
-    await dp.start_polling(bot)
+    print("🤖 Бот @quasar_drop_bot успешно запущен!")
+    # Запускаем веб-сервер для Render и поллинг бота одновременно
+    await asyncio.gather(
+        web_server(),
+        dp.start_polling(bot)
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())
