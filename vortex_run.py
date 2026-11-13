@@ -1014,6 +1014,7 @@ async def process_broadcast(message: types.Message, state: FSMContext):
 from aiohttp import web
 import os
 import asyncio
+import traceback
 
 async def handle(request):
     return web.Response(text="Bot is running!")
@@ -1029,12 +1030,18 @@ async def web_server():
     await asyncio.Future()
 
 async def main():
-    print("🤖 Бот @quasar_drop_bot успешно запущен!")
-    # Запускаем веб-сервер для Render и поллинг бота одновременно
-    await asyncio.gather(
-        web_server(),
-        dp.start_polling(bot)
-    )
+    try:
+        print("🤖 Бот @quasar_drop_bot успешно запущен!")
+        await asyncio.gather(
+            web_server(),
+            dp.start_polling(bot)
+        )
+    except Exception as e:
+        print(f"❌ ОШИБКА ПРИ ЗАПУСКЕ БОТА: {e}")
+        traceback.print_exc()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        print(f"❌ Критическая ошибка asyncio: {e}")
