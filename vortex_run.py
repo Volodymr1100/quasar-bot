@@ -45,14 +45,26 @@ dp.include_router(router)
 
 
 # =====================================================================
-# 🔤 СИСТЕМА СМЕНЫ ШРИФТА БОТА (БЕЗОПАСНАЯ ВЕРСИЯ БЕЗ ОШИБОК)
+# 🔤 СИСТЕМА СМЕНЫ ШРИФТА БОТА (БЕЗОПАСНАЯ ВЕРСИЯ БЕЗ СБОЕВ)
 # =====================================================================
 FONT_MAPS = {
-    "mono": {},
-    "bold": {},
-    "double": {},
+    "mono": str.maketrans(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+        "𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣𝟶𝟷𝟸𝟹𝟺𝟻𝟼𝟽𝟾𝟿",
+    ),
+    "bold": str.maketrans(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+        "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝚌𝗱𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝗽𝗾𝗿𝚜𝘁𝚞𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵",
+    ),
+    "double": str.maketrans(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+        "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝖊𝖋𝖌𝖍𝖎𝕛𝖐𝖑𝖒𝖓𝖔𝕡𝖖𝖗𝖘𝖙𝖚𝖛𝖜𝖝𝖞𝟟𝟘𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡",
+    ),
 }
-CYRILLIC_SMALLCAPS = {}
+CYRILLIC_SMALLCAPS = str.maketrans(
+    "абвгдежзийклмнопрстуфхцчшщъыьэюя",
+    "ᴀʙʙгдᴇжзийклмнопрстуфхцчшщъыьэюя",
+)
 
 
 def get_font_mode() -> str:
@@ -62,10 +74,31 @@ def get_font_mode() -> str:
 
 
 def style_text(text: str) -> str:
-    return text
+    mode = get_font_mode()
+    if mode == "normal":
+        return text
+
+    parts = text.split("<")
+    out = []
+    for i, part in enumerate(parts):
+        if i == 0:
+            out.append(_transform_chunk(part, mode))
+        else:
+            if ">" in part:
+                tag, rest = part.split(">", 1)
+                out.append(f"<{tag}>{_transform_chunk(rest, mode)}")
+            else:
+                out.append(f"<{part}")
+    return "".join(out)
 
 
 def _transform_chunk(chunk: str, mode: str) -> str:
+    if "http://" in chunk or "https://" in chunk or "t.me/" in chunk:
+        return chunk
+    if mode in FONT_MAPS:
+        chunk = chunk.translate(FONT_MAPS[mode])
+    if mode == "smallcaps":
+        chunk = chunk.translate(CYRILLIC_SMALLCAPS)
     return chunk
 
 
@@ -224,7 +257,7 @@ async def try_verify_referral(user_id: int):
     if inviter:
         try:
             msg_text = (
-                f'<tg-emoji emoji-id="5461151367559141950">🎉</tg-emoji> <b>НОВЫЙ ПОДТВЕРЖДЕННЫЙ РЕФЕРАЛ!</b>\n\n'
+                f"🎉 <b>НОВЫЙ ПОДТВЕРЖДЕННЫЙ РЕФЕРАЛ!</b>\n\n"
                 f"┌ 👤 Друг: <b>{user['first_name']}</b> подписался на ТГК!\n"
                 f"├ ⭐ Награда: <b>+{REF_REWARD_STARS} Stars</b>\n"
                 f"├ 👥 Всего друзей: <b>{inviter['refs_count']} чел.</b>\n"
@@ -276,12 +309,12 @@ def back_home_kb() -> InlineKeyboardMarkup:
 def main_menu_text(user) -> str:
     nft_status = user["nft_won"] if user["nft_won"] else "Не выбит (Открой NFT Кейс!)"
     text = (
-        f'<tg-emoji emoji-id="5368324170671202286">🌌</tg-emoji> <b>QUASAR DROP • PREMIUM STARS & NFT</b> <tg-emoji emoji-id="5427009714745517609">✨</tg-emoji>\n'
+        f"🌌 <b>QUASAR DROP • PREMIUM STARS & NFT</b> ✨\n"
         f"<i>Добро пожаловать в элитный дроп-бот подарков и Telegram Stars!</i>\n\n"
-        f'┌ <tg-emoji emoji-id="5373012449597335010">🆔</tg-emoji> Ваш ID: <code>{user["user_id"]}</code>\n'
-        f'├ <tg-emoji emoji-id="5438496463044752972">⭐</tg-emoji> Баланс: <b>{user["stars"]:,} Stars</b>\n'
-        f'├ <tg-emoji emoji-id="5372926953978341366">👥</tg-emoji> Подтвержденных друзей: <b>{user["refs_count"]} чел.</b>\n'
-        f'└ <tg-emoji emoji-id="5463071033256748994">🖼</tg-emoji> Ваш NFT в инвентаре: <b>{nft_status}</b>\n\n'
+        f'┌ 🆔 Ваш ID: <code>{user["user_id"]}</code>\n'
+        f'├ ⭐ Баланс: <b>{user["stars"]:,} Stars</b>\n'
+        f'├ 👥 Подтвержденных друзей: <b>{user["refs_count"]} чел.</b>\n'
+        f'└ 🖼 Ваш NFT в инвентаре: <b>{nft_status}</b>\n\n'
         f"👇 <b>Выберите нужный раздел на клавиатуре ниже:</b>"
     )
     return style_text(text)
@@ -325,6 +358,7 @@ async def cmd_start(message: Message, command: CommandObject):
 
 @router.callback_query(F.data == "check_start_subs")
 async def cb_check_start_subs(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     unsub = await check_user_subscriptions(call.from_user.id)
     if unsub:
         await call.answer("❌ Вы подписались не на все каналы! Подпишитесь и нажмите снова.", show_alert=True)
@@ -337,6 +371,7 @@ async def cb_check_start_subs(call: CallbackQuery):
 
 @router.callback_query(F.data == "back_home")
 async def cb_back_home(call: CallbackQuery, state: FSMContext):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     await state.clear()
     await try_verify_referral(call.from_user.id)
     user = get_user(call.from_user.id)
@@ -352,6 +387,7 @@ NFT_DROPS = [
 
 @router.callback_query(F.data == "menu_nft_case")
 async def cb_nft_case(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     user = get_user(call.from_user.id)
     webapp_url = f"{WEBAPP_URL.rstrip('/')}/case?user_id={call.from_user.id}"
 
@@ -398,6 +434,7 @@ async def cb_nft_case(call: CallbackQuery):
 
 @router.callback_query(F.data == "spin_nft_guaranteed")
 async def cb_spin_nft(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     user = get_user(call.from_user.id)
     if user["nft_won"]:
         await call.answer("У вас уже выбит гарантированный NFT! Переходим к выводу.", show_alert=True)
@@ -436,6 +473,7 @@ async def cb_spin_nft(call: CallbackQuery):
 
 @router.callback_query(F.data == "withdraw_nft_now")
 async def cb_withdraw_nft_now(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     user = get_user(call.from_user.id)
     if not user["nft_won"]:
         await call.answer("❌ Сначала выбейте NFT в кейсе!", show_alert=True)
@@ -466,6 +504,7 @@ SUB_CASE_ITEMS = [
 
 @router.callback_query(F.data == "menu_sub_case")
 async def cb_sub_case(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     ads = get_active_ads()
     user = get_user(call.from_user.id)
 
@@ -488,6 +527,7 @@ async def cb_sub_case(call: CallbackQuery):
 
 @router.callback_query(F.data == "open_sub_case")
 async def cb_open_sub_case(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     user = get_user(call.from_user.id)
     if user["sub_case_claimed"] == 1:
         await call.answer("❌ Вы уже открывали Кейс за подписки! Дождитесь обновления списка спонсоров.", show_alert=True)
@@ -521,6 +561,7 @@ async def cb_open_sub_case(call: CallbackQuery):
 
 @router.callback_query(F.data == "menu_withdraw")
 async def cb_withdraw_menu(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     user = get_user(call.from_user.id)
     stars = user["stars"]
     refs = user["refs_count"]
@@ -545,6 +586,7 @@ async def cb_withdraw_menu(call: CallbackQuery):
 
 @router.callback_query(F.data == "do_withdraw_stars")
 async def cb_do_withdraw_stars(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     user = get_user(call.from_user.id)
     stars = user["stars"]
     refs = user["refs_count"]
@@ -602,6 +644,7 @@ async def cb_do_withdraw_stars(call: CallbackQuery):
 
 @router.callback_query(F.data == "menu_earn")
 async def cb_menu_earn(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     ads = get_active_ads()
     user_id = call.from_user.id
 
@@ -641,6 +684,7 @@ async def cb_menu_earn(call: CallbackQuery):
 
 @router.callback_query(F.data.startswith("view_ad_"))
 async def cb_view_ad(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     ad_id = int(call.data.split("_")[-1])
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
@@ -670,6 +714,7 @@ async def cb_view_ad(call: CallbackQuery):
 
 @router.callback_query(F.data.startswith("claim_ad_"))
 async def cb_claim_ad(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     ad_id = int(call.data.split("_")[-1])
     user_id = call.from_user.id
 
@@ -707,6 +752,7 @@ async def cb_claim_ad(call: CallbackQuery):
 
 @router.callback_query(F.data == "menu_refs")
 async def cb_menu_refs(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     user = get_user(call.from_user.id)
     bot_info = await bot.get_me()
     ref_link = f"https://t.me/{bot_info.username}?start={call.from_user.id}"
@@ -737,6 +783,7 @@ async def cb_menu_refs(call: CallbackQuery):
 
 @router.callback_query(F.data == "menu_profile")
 async def cb_menu_profile(call: CallbackQuery):
+    register_user(call.from_user.id, call.from_user.username, call.from_user.first_name)
     user = get_user(call.from_user.id)
     dt = datetime.fromtimestamp(user["joined_at"]).strftime("%d.%m.%Y %H:%M")
     text = (
@@ -800,13 +847,15 @@ def get_admin_stats_text() -> str:
         f"├ 🔥 Активных рефералов (с ТГК): <b>{active_refs} чел.</b>\n"
         f"├ ⭐ Звезд на балансах: <b>{total_stars:,} Stars</b>\n"
         f"├ 📢 Активной рекламы: <b>{active_ads} шт.</b>\n"
-        f"└ 🔤 Текущий шрифт бота: <code>{font_mode}</code>"
+        f"└ 🔤 Текущий шрифт бота: <code>{font_mode}</code>\n\n"
+        f"💡 <i>Команды: /restore_count 283 (добавить юзеров в стату), /db (скачать базу)</i>"
     )
     return style_text(text)
 
 
 @router.message(Command("admins"))
 async def cmd_admins(message: Message):
+    register_user(message.from_user.id, message.from_user.username, message.from_user.first_name)
     if message.from_user.id not in ADMIN_IDS:
         await message.answer(
             f"⚠️ Ваш Telegram ID: <code>{message.from_user.id}</code>.\n"
@@ -1063,6 +1112,51 @@ async def cb_adm_export_db(call: CallbackQuery):
     doc = BufferedInputFile(file_bytes, filename="quasar_users.csv")
     await call.message.answer_document(doc, caption="📥 Выгрузка базы пользователей QUASAR DROP")
     await call.answer()
+
+
+# =====================================================================
+# 🛡 ВОССТАНОВЛЕНИЕ СЧЕТЧИКА ЮЗЕРОВ И БЭКАП БАЗЫ (/restore_count и /db)
+# =====================================================================
+@router.message(Command("restore_count"))
+async def cmd_restore_count(message: Message, command: CommandObject):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    count = int(command.args) if (command.args and command.args.isdigit()) else 283
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        now = int(time.time())
+        for _ in range(count):
+            fake_id = random.randint(100000000, 999999999)
+            c.execute(
+                "INSERT OR IGNORE INTO users (user_id, username, first_name, stars, joined_at) VALUES (?, ?, ?, 50, ?)",
+                (fake_id, f"user_{fake_id}", "Пользователь", now),
+            )
+        conn.commit()
+    await message.answer(f"✅ В статистику базы добавлено +{count} пользователей!")
+
+
+@router.message(Command("db"))
+async def cmd_get_db_file(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    if os.path.exists(DB_PATH):
+        with open(DB_PATH, "rb") as f:
+            doc = BufferedInputFile(f.read(), filename="quasar_drop.db")
+        await message.answer_document(
+            doc,
+            caption="💾 Это полный файл твоей базы. Если Render перезапустится — просто перешли этот файл обратно боту, и все люди и реклама вернутся.",
+        )
+
+
+@router.message(F.document)
+async def restore_db_from_file(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    if message.document.file_name == "quasar_drop.db":
+        file = await bot.get_file(message.document.file_id)
+        await bot.download_file(file.file_path, destination=DB_PATH)
+        init_db()
+        await message.answer("✅ База данных quasar_drop.db полностью восстановлена!")
 
 
 # =====================================================================
