@@ -54,11 +54,11 @@ FONT_MAPS = {
     ),
     "bold": str.maketrans(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝚌𝗱𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝗽𝗾𝗿𝚜𝘁𝚞𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝲲𝴀𝴁",
+        "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝗽𝗾𝗿𝚜𝘁𝚞𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝲲𝴀𝴁",
     ),
     "double": str.maketrans(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝖊𝖋𝖌𝖍𝖎𝕏𝖐𝖑𝖒𝖓𝖔𝕕𝖖𝖗𝖘𝖙𝖚𝖧𝖜𝕩𝖞𝟟𝟘𝟙𝚫𝚬𝚭𝚮𝚯𝚰𝚱𝚲𝚳",
+        "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝖊𝖋𝖌𝖍𝖎𝕁𝖐𝖑𝖒𝖓𝖔𝕡𝖖𝖗𝖘𝖙𝖚𝖛𝖜𝖝𝖞𝟟𝟘𝟙𝚫𝚬𝚭𝚮𝚯𝚰𝚱𝚲𝚳",
     ),
 }
 CYRILLIC_SMALLCAPS = str.maketrans(
@@ -159,7 +159,6 @@ def init_db():
         )
         c.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('font_mode', 'normal')")
         
-        # Автоматическое добавление колонки без ошибок
         try:
             c.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
         except sqlite3.OperationalError:
