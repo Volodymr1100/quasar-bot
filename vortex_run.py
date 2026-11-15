@@ -26,7 +26,7 @@ from aiogram.types import (
 )
 
 # =====================================================================
-# ⚙️ НАСТРОЙКИ БОТА (БЕРУТСЯ ИЗ RENDER ИЛИ ВПИШИТЕ СВОИ ПРЯМО СЮДА)
+# ⚙️ НАСТРОЙКИ БОТА
 # =====================================================================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "ВАШ_ТОКЕН_БОТА")
 RAW_ADMINS = os.getenv("ADMIN_IDS", "123456789")
@@ -54,11 +54,11 @@ FONT_MAPS = {
     ),
     "bold": str.maketrans(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵",
+        "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝚎𝚏𝗴𝚑𝚒𝚓𝗸𝚕𝗺𝗻𝚘𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵",
     ),
     "double": str.maketrans(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝖊𝖋𝖌𝖍𝖎𝖏𝖐𝖑𝖒𝖓𝖔𝖕𝖖𝖗𝖘𝖙𝖚𝖛𝖜𝖝𝖞𝖟𝟘𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡",
+        "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝖊𝖋𝖌𝖍𝖎𝖏𝖐𝖑𝖒𝖓𝖔𝖕𝖖𝖗𝖘𝖙𝖚𝖛𝖜𝖝𝖞𝖟𝟘𝟙𝕚𝕛𝜜𝜝𝜞𝜟",
     ),
 }
 
@@ -124,45 +124,6 @@ def init_db():
                 joined_at INTEGER
             )
         """
-        )
-        c.execute(
-            """
-            CREATE TABLE IF NOT EXISTS ads (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT,
-                url TEXT,
-                channel_id TEXT,
-                reward INTEGER DEFAULT 10,
-                hours INTEGER DEFAULT 0,
-                limit_users INTEGER DEFAULT 0,
-                current_users INTEGER DEFAULT 0,
-                created_at INTEGER,
-                active INTEGER DEFAULT 1
-            )
-        """
-        )
-        try:
-            c.execute("ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT ''")
-            conn.commit()
-        except Exception:
-            pass
-    with sqlite3.connect(DB_PATH) as conn:
-        c = conn.cursor()
-        c.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY,
-                username TEXT,
-                first_name TEXT,
-                stars INTEGER DEFAULT 50,
-                invited_by INTEGER DEFAULT 0,
-                ref_verified INTEGER DEFAULT 0,
-                refs_count INTEGER DEFAULT 0,
-                nft_won TEXT DEFAULT NULL,
-                sub_case_claimed INTEGER DEFAULT 0,
-                joined_at INTEGER
-            )
-            """
         )
         c.execute(
             """
@@ -293,7 +254,7 @@ async def try_verify_referral(user_id: int):
 
 
 # =====================================================================
-# 🎛 КЛАССИЧЕСКИЕ КРАСИВЫЕ КНОПКИ И МЕНЮ (СТАРЫЙ СТИЛЬ + PREMIUM)
+# 🎛 КЛАВИАТУРЫ И МЕНЮ
 # =====================================================================
 def main_menu_kb(user_id: int) -> InlineKeyboardMarkup:
     webapp_roulette_url = f"{WEBAPP_URL.rstrip('/')}/case?user_id={user_id}"
@@ -345,7 +306,7 @@ def main_menu_text(user) -> str:
 
 
 # =====================================================================
-# 🚀 ОБРАБОТЧИКИ ПОЛЬЗОВАТЕЛЕЙ (/start, ПРОФИЛЬ, КЕЙСЫ, ВЫВОД)
+# 🚀 ОБРАБОТЧИКИ
 # =====================================================================
 @router.message(CommandStart())
 async def cmd_start(message: Message, command: CommandObject):
@@ -400,9 +361,6 @@ async def cb_back_home(call: CallbackQuery, state: FSMContext):
     await call.message.edit_text(main_menu_text(user), reply_markup=main_menu_kb(call.from_user.id))
 
 
-# ---------------------------------------------------------------------
-# ПУНКТ 2: NFT КЕЙС С ГАРАНТОМ NFT И ВЫВОДОМ ЗА 25 ДРУЗЕЙ
-# ---------------------------------------------------------------------
 NFT_DROPS = [
     {"name": "Snoop Dogg NFT 🐕", "price": "6.49 TON", "rarity": "Legendary"},
     {"name": "Swag Bag NFT 🎒", "price": "6.45 TON", "rarity": "Mythical"},
@@ -514,9 +472,6 @@ async def cb_withdraw_nft_now(call: CallbackQuery):
     await call.answer("✅ Заявка на отправку NFT создана! Ожидайте передачу подарка.", show_alert=True)
 
 
-# ---------------------------------------------------------------------
-# ПУНКТ 3: КЕЙС ЗА ПОДПИСКИ (ДРОП ОТ МИШКИ ДО NFT ЗА ВСЕХ СПОНСОРОВ)
-# ---------------------------------------------------------------------
 SUB_CASE_ITEMS = [
     ("🧸 Подарок «Мишка» (15 ⭐)", 15),
     ("💝 Подарок «Сердце» (15 ⭐)", 15),
@@ -582,9 +537,6 @@ async def cb_open_sub_case(call: CallbackQuery):
     await call.message.edit_text(style_text(text), reply_markup=back_home_kb())
 
 
-# ---------------------------------------------------------------------
-# ПУНКТ 5: ВЫВОД ОТ 1000 ЗВЕЗД -> ПОЗОВИТЕ 10 ЧЕЛ -> ПОТОМ ПОСЛЕДНИЕ 20
-# ---------------------------------------------------------------------
 @router.callback_query(F.data == "menu_withdraw")
 async def cb_withdraw_menu(call: CallbackQuery):
     user = get_user(call.from_user.id)
@@ -666,9 +618,6 @@ async def cb_do_withdraw_stars(call: CallbackQuery):
     await call.answer("✅ Ваша заявка поставлена в очередь на выплату администратором!", show_alert=True)
 
 
-# ---------------------------------------------------------------------
-# ЗАРАБОТОК ЗВЕЗД НА ЗАДАНИЯХ И РЕФЕРАЛЬНАЯ СИСТЕМА
-# ---------------------------------------------------------------------
 @router.callback_query(F.data == "menu_earn")
 async def cb_menu_earn(call: CallbackQuery):
     ads = get_active_ads()
@@ -822,7 +771,7 @@ async def cb_menu_profile(call: CallbackQuery):
 
 
 # =====================================================================
-# 👑 АДМИН-ПАНЕЛЬ (/admins): РЕКЛАМА, ЛС ЧЕЛУ, ШРИФТ, РАССЫЛКА, БД
+# 👑 АДМИН-ПАНЕЛЬ
 # =====================================================================
 class AdminStates(StatesGroup):
     ad_title = State()
@@ -1135,7 +1084,7 @@ async def cb_adm_export_db(call: CallbackQuery):
 
 
 # =====================================================================
-# 🌐 MINI-APP (WEBAPP) ВИЗУАЛЬНЫЙ NFT КЕЙС + СЕРВЕР ДЛЯ UPTIMEROBOT
+# 🌐 MINI-APP HTML
 # =====================================================================
 MINI_APP_HTML = """
 <!DOCTYPE html>
@@ -1151,22 +1100,18 @@ MINI_APP_HTML = """
     .header { margin-bottom: 18px; }
     .header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
     .header p { color: #8c8c96; font-size: 14px; margin-top: 4px; line-height: 1.35; }
-
     .roulette-wrap { position: relative; margin: 22px 0; padding: 18px 0; overflow: hidden; }
     .pointer-top { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 13px solid #f7b928; margin: 0 auto 10px; filter: drop-shadow(0 0 8px #f7b928); }
     .pointer-bottom { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 13px solid #f7b928; margin: 10px auto 0; filter: drop-shadow(0 0 8px #f7b928); }
-
     .track-container { width: 100%; overflow: hidden; position: relative; }
     .track { display: flex; gap: 14px; transition: transform 4.2s cubic-bezier(0.12, 0.8, 0.18, 1); will-change: transform; }
     .item-card { min-width: 145px; height: 155px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); }
     .item-card .emoji-art { font-size: 64px; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)); margin-bottom: 12px; }
     .item-card .title { font-size: 14px; font-weight: 700; color: #f1f1f5; }
-
     .spin-btn { width: 100%; background: linear-gradient(90deg, #ffdf40 0%, #f5a623 100%); color: #111; font-weight: 800; font-size: 17px; border: none; border-radius: 999px; padding: 17px; cursor: pointer; box-shadow: 0 8px 25px rgba(245, 166, 35, 0.35); transition: transform 0.15s ease, opacity 0.2s; }
     .spin-btn:active { transform: scale(0.98); }
     .spin-btn:disabled { opacity: 0.55; cursor: not-allowed; }
     .sub-hint { text-align: center; color: #7c7c85; font-size: 13px; margin-top: 10px; line-height: 1.35; }
-
     .drops-header { display: flex; justify-content: space-between; align-items: center; margin: 28px 0 14px; }
     .drops-header h2 { font-size: 18px; font-weight: 800; }
     .drops-header span { font-size: 13px; color: #7c7c85; }
@@ -1179,7 +1124,6 @@ MINI_APP_HTML = """
     .drop-box .big-icon { font-size: 46px; margin: 6px 0 10px; }
     .drop-box .d-name { font-size: 12px; font-weight: 700; width: 100%; text-align: left; }
     .drop-box .d-sub { font-size: 10px; color: rgba(255,255,255,0.6); width: 100%; text-align: left; }
-
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px; z-index: 99; }
     .modal-card { background: #18181c; border: 1px solid rgba(255,215,0,0.3); border-radius: 26px; padding: 24px 20px; text-align: center; max-width: 340px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
     .modal-card .win-icon { font-size: 74px; margin-bottom: 12px; }
@@ -1192,7 +1136,6 @@ MINI_APP_HTML = """
         <h1>NFT Кейс</h1>
         <p>Приглашай друзей, открывай бесплатный кейс и получай подарки.</p>
     </div>
-
     <div class="roulette-wrap">
         <div class="pointer-top"></div>
         <div class="track-container">
@@ -1200,15 +1143,12 @@ MINI_APP_HTML = """
         </div>
         <div class="pointer-bottom"></div>
     </div>
-
     <button class="spin-btn" id="spinBtn" onclick="spinRoulette()">Крутить бесплатно</button>
     <div class="sub-hint">Гарантированный дроп NFT! Вывод открывается за приглашение 25 друзей в бота.</div>
-
     <div class="drops-header">
         <h2>Что может выпасть</h2>
         <span>3 коллекции</span>
     </div>
-
     <div class="drops-grid">
         <div class="drop-box green">
             <div class="ton-badge">💎 6.49</div>
@@ -1229,7 +1169,6 @@ MINI_APP_HTML = """
             <div class="d-sub">Коллекция</div>
         </div>
     </div>
-
     <div class="modal" id="winModal">
         <div class="modal-card">
             <div class="win-icon" id="winIcon">🐕</div>
@@ -1238,22 +1177,18 @@ MINI_APP_HTML = """
             <button class="spin-btn" onclick="closeAndReturn()">Забрать в боте</button>
         </div>
     </div>
-
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-
     const items = [
         { name: "Liberty Figure", icon: "🗽", price: "6.00 TON" },
         { name: "Snoop Dogg", icon: "🐕", price: "6.49 TON" },
         { name: "Swag Bag", icon: "🎒", price: "6.45 TON" }
     ];
-
     const track = document.getElementById('rouletteTrack');
     const totalCards = 35;
     const winIndex = 27;
     let winningItem = items[Math.floor(Math.random() * items.length)];
-
     for (let i = 0; i < totalCards; i++) {
         const it = (i === winIndex) ? winningItem : items[i % items.length];
         const card = document.createElement('div');
@@ -1261,30 +1196,25 @@ MINI_APP_HTML = """
         card.innerHTML = `<div class="emoji-art">${it.icon}</div><div class="title">${it.name}</div>`;
         track.appendChild(card);
     }
-
     async function spinRoulette() {
         const btn = document.getElementById('spinBtn');
         btn.disabled = true;
         btn.innerText = "Крутим...";
-
         const cardWidth = 159;
         const centerOffset = (window.innerWidth / 2) - (145 / 2) - 16;
         const targetX = -(winIndex * cardWidth) + centerOffset;
         track.style.transform = `translateX(${targetX}px)`;
-
         const params = new URLSearchParams(window.location.search);
         const uid = params.get("user_id") || (tg.initDataUnsafe?.user?.id) || 0;
         try {
             await fetch(`/api/spin_nft?user_id=${uid}&nft=${encodeURIComponent(winningItem.name + ' (' + winningItem.price + ')')}`);
         } catch (e) {}
-
         setTimeout(() => {
             document.getElementById('winIcon').innerText = winningItem.icon;
             document.getElementById('winTitle').innerText = winningItem.name + " (" + winningItem.price + ")";
             document.getElementById('winModal').style.display = 'flex';
         }, 4400);
     }
-
     function closeAndReturn() {
         tg.close();
     }
@@ -1330,9 +1260,18 @@ async def start_web_server():
 async def main():
     init_db()
     await start_web_server()
-    await bot.delete_webhook(drop_pending_updates=True)
+    
+    # 🛑 ЖЕСТКИЙ СБРОС ВСЕХ КОНФЛИКТОВ И ОЧЕРЕДЕЙ НА СТОРОНЕ TELEGRAM
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        logging.info("🧹 Старые вебхуки и зависшие запросы успешно удалены!")
+    except Exception as e:
+        logging.warning(f"⚠️ Не удалось удалить вебхук: {e}")
+
     logging.info("🚀 QUASAR DROP Bot запущен!")
-    await dp.start_polling(bot)
+    
+    # Запускаем поллинг с принудительным сбросом старых апдейтов
+    await dp.start_polling(bot, drop_pending_updates=True)
 
 
 if __name__ == "__main__":
