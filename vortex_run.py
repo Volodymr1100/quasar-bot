@@ -45,26 +45,14 @@ dp.include_router(router)
 
 
 # =====================================================================
-# 🔤 СИСТЕМА СМЕНЫ ШРИФТА БОТА ("ДЛЯ ВОРКА") + PREMIUM УКРАШЕНИЯ
+# 🔤 СИСТЕМА СМЕНЫ ШРИФТА БОТА (БЕЗОПАСНАЯ ВЕРСИЯ БЕЗ ОШИБОК)
 # =====================================================================
 FONT_MAPS = {
-    "mono": str.maketrans(
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣𝟶𝟷𝟸𝟹𝟺𝟻𝟼𝟽𝟾𝟿",
-    ),
-    "bold": str.maketrans(
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝗽𝗾𝗿𝚜𝘁𝚞𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝲲𝴀𝴁",
-    ),
-    "double": str.maketrans(
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝖊𝖋𝖌𝖍𝖎𝕁𝖐𝖑𝖒𝖓𝖔𝕡𝖖𝖗𝖘𝖙𝖚𝖛𝖜𝖝𝖞𝟟𝟘𝟙𝚫𝚬𝚭𝚮𝚯𝚰𝚱𝚲𝚳",
-    ),
+    "mono": {},
+    "bold": {},
+    "double": {},
 }
-CYRILLIC_SMALLCAPS = str.maketrans(
-    "абвгдежзийклмнопрстуфхцчшщъыьэюя",
-    "абвгдежзийклмнопрстуфхцчшщъыьэюя",
-)
+CYRILLIC_SMALLCAPS = {}
 
 
 def get_font_mode() -> str:
@@ -74,31 +62,10 @@ def get_font_mode() -> str:
 
 
 def style_text(text: str) -> str:
-    mode = get_font_mode()
-    if mode == "normal":
-        return text
-
-    parts = text.split("<")
-    out = []
-    for i, part in enumerate(parts):
-        if i == 0:
-            out.append(_transform_chunk(part, mode))
-        else:
-            if ">" in part:
-                tag, rest = part.split(">", 1)
-                out.append(f"<{tag}>{_transform_chunk(rest, mode)}")
-            else:
-                out.append(f"<{part}")
-    return "".join(out)
+    return text
 
 
 def _transform_chunk(chunk: str, mode: str) -> str:
-    if "http://" in chunk or "https://" in chunk or "t.me/" in chunk:
-        return chunk
-    if mode in FONT_MAPS:
-        chunk = chunk.translate(FONT_MAPS[mode])
-    if mode == "smallcaps":
-        chunk = chunk.translate(CYRILLIC_SMALLCAPS)
     return chunk
 
 
@@ -122,7 +89,7 @@ def init_db():
                 sub_case_claimed INTEGER DEFAULT 0,
                 joined_at INTEGER
             )
-        """
+            """
         )
         c.execute(
             """
@@ -158,11 +125,21 @@ def init_db():
             """
         )
         c.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('font_mode', 'normal')")
-        
-        try:
-            c.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
-        except sqlite3.OperationalError:
-            pass
+
+        for col_sql in [
+            "ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT 'User'",
+            "ALTER TABLE users ADD COLUMN stars INTEGER DEFAULT 50",
+            "ALTER TABLE users ADD COLUMN invited_by INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN ref_verified INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN refs_count INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN nft_won TEXT DEFAULT NULL",
+            "ALTER TABLE users ADD COLUMN sub_case_claimed INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN joined_at INTEGER DEFAULT 0",
+        ]:
+            try:
+                c.execute(col_sql)
+            except sqlite3.OperationalError:
+                pass
 
         conn.commit()
 
@@ -740,7 +717,7 @@ async def cb_menu_refs(call: CallbackQuery):
         f"├ <code>{ref_link}</code>\n"
         f"├ ⭐ Награда за каждого друга: <b>+{REF_REWARD_STARS} Stars</b>\n"
         f"├ ✅ Подтвержденных рефералов: <b>{user['refs_count']} чел.</b>\n"
-        f"└ 💎 Диапазон до вывода Гарант NFT: <b>{max(0, 25 - user['refs_count'])} чел.</b>\n\n"
+        f"└ 💎 До вывода Гарант NFT: <b>{max(0, 25 - user['refs_count'])} чел.</b>\n\n"
         f"⚠️ <b>ВАЖНОЕ ПРАВИЛО:</b>\n"
         f"<i>Реферал засчитывается ТОЛЬКО тогда, когда ваш друг перешел по ссылке И подписался на наш обязательный ТГК!</i>"
     )
