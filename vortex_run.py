@@ -107,11 +107,45 @@ def _transform_chunk(chunk: str, mode: str) -> str:
 # 🗄 БАЗА ДАННЫХ SQLITE
 # =====================================================================
 def init_db():
-try:
-        cursor.execute("ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT ''")
-        conn.commit()
-    except Exception:
-        pass
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY,
+                username TEXT,
+                first_name TEXT,
+                stars INTEGER DEFAULT 50,
+                invited_by INTEGER DEFAULT 0,
+                ref_verified INTEGER DEFAULT 0,
+                refs_count INTEGER DEFAULT 0,
+                nft_won TEXT DEFAULT NULL,
+                sub_case_claimed INTEGER DEFAULT 0,
+                joined_at INTEGER
+            )
+        """
+        )
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT,
+                url TEXT,
+                channel_id TEXT,
+                reward INTEGER DEFAULT 10,
+                hours INTEGER DEFAULT 0,
+                limit_users INTEGER DEFAULT 0,
+                current_users INTEGER DEFAULT 0,
+                created_at INTEGER,
+                active INTEGER DEFAULT 1
+            )
+        """
+        )
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT ''")
+            conn.commit()
+        except Exception:
+            pass
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
         c.execute(
