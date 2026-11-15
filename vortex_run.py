@@ -28,7 +28,7 @@ from aiogram.types import (
 # =====================================================================
 # ⚙️ НАСТРОЙКИ БОТА
 # =====================================================================
-BOT_TOKEN = os.getenv("BOT_TOKEN", "ВАШ_ТОКЕН_БОТА")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "9255394602:AAGI6UkIwVhF0559T3XPxiwCJjo8rws7rKk")
 RAW_ADMINS = os.getenv("ADMIN_IDS", "123456789")
 ADMIN_IDS = [int(x.strip()) for x in RAW_ADMINS.split(",") if x.strip().isdigit()]
 
@@ -54,16 +54,16 @@ FONT_MAPS = {
     ),
     "bold": str.maketrans(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝚌𝗱𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝗽𝗾𝗿𝚜𝘁𝚞𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝳲𝴀𝴁",
+        "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝚌𝗱𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝗽𝗾𝗿𝚜𝘁𝚞𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝲲𝴀𝴁",
     ),
     "double": str.maketrans(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-        "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝖊𝖋𝖌𝖍𝖎𝕏𝖐𝖑𝖒𝖓𝖔𝖕𝖖𝖗𝖘𝖙𝖚𝕧𝖜𝕩𝖞𝟟𝟘𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡",
+        "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ𝕒𝕓𝕔𝕕𝖊𝖋𝖌𝖍𝖎𝕏𝖐𝖑𝖒𝖓𝖔𝕕𝖖𝖗𝖘𝖙𝖚𝖧𝖜𝕩𝖞𝟟𝟘𝟙𝚫𝚬𝚭𝚮𝚯𝚰𝚱𝚲𝚳",
     ),
 }
 CYRILLIC_SMALLCAPS = str.maketrans(
     "абвгдежзийклмнопрстуфхцчшщъыьэюя",
-    "ᴀʙʙгдᴇжзийклмнопрстуфхцчшщъыьэюя",
+    "абвгдежзийклмнопрстуфхцчшщъыьэюя",
 )
 
 
@@ -157,16 +157,15 @@ def init_db():
             )
             """
         )
-      
         c.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('font_mode', 'normal')")
-    
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
-    except sqlite3.OperationalError:
-        pass
-
-    conn.commit()
         
+        # Автоматическое добавление колонки без ошибок
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
+        except sqlite3.OperationalError:
+            pass
+
+        conn.commit()
 
 
 def get_user(user_id: int):
@@ -742,7 +741,7 @@ async def cb_menu_refs(call: CallbackQuery):
         f"├ <code>{ref_link}</code>\n"
         f"├ ⭐ Награда за каждого друга: <b>+{REF_REWARD_STARS} Stars</b>\n"
         f"├ ✅ Подтвержденных рефералов: <b>{user['refs_count']} чел.</b>\n"
-        f"└ 💎 До вывода Гарант NFT: <b>{max(0, 25 - user['refs_count'])} чел.</b>\n\n"
+        f"└ 💎 Диапазон до вывода Гарант NFT: <b>{max(0, 25 - user['refs_count'])} чел.</b>\n\n"
         f"⚠️ <b>ВАЖНОЕ ПРАВИЛО:</b>\n"
         f"<i>Реферал засчитывается ТОЛЬКО тогда, когда ваш друг перешел по ссылке И подписался на наш обязательный ТГК!</i>"
     )
@@ -1268,7 +1267,6 @@ async def main():
     init_db()
     await start_web_server()
     
-    # 🛑 ЖЕСТКИЙ СБРОС ВСЕХ КОНФЛИКТОВ И ОЧЕРЕДЕЙ НА СТОРОНЕ TELEGRAM
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         logging.info("🧹 Старые вебхуки и зависшие запросы успешно удалены!")
@@ -1276,8 +1274,6 @@ async def main():
         logging.warning(f"⚠️ Не удалось удалить вебхук: {e}")
 
     logging.info("🚀 QUASAR DROP Bot запущен!")
-    
-    # Запускаем поллинг с принудительным сбросом старых апдейтов
     await dp.start_polling(bot, drop_pending_updates=True)
 
 
