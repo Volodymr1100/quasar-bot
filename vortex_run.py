@@ -157,8 +157,16 @@ def init_db():
             )
             """
         )
+      
         c.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('font_mode', 'normal')")
-        conn.commit()
+    
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    conn.commit()
+        
 
 
 def get_user(user_id: int):
