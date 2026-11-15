@@ -103,7 +103,7 @@ def _transform_chunk(chunk: str, mode: str) -> str:
 
 
 # =====================================================================
-# 🗄 БАЗА ДАННЫХ SQLITE
+# 🗄 БАЗА ДАННЫХ SQLITE И ПРОВЕРКА АДМИНОВ
 # =====================================================================
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
@@ -157,7 +157,17 @@ def init_db():
             )
             """
         )
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS extra_admins (
+                user_id INTEGER PRIMARY KEY
+            )
+            """
+        )
         c.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('font_mode', 'normal')")
+
+        for adm_id in ADMIN_IDS:
+            c.execute("INSERT OR IGNORE INTO extra_admins (user_id) VALUES (?)", (adm_id,))
 
         for col_sql in [
             "ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT 'User'",
@@ -175,6 +185,17 @@ def init_db():
                 pass
 
         conn.commit()
+
+
+def get_all_admins() -> list:
+    with sqlite3.connect(DB_PATH) as conn:
+        rows = conn.execute("SELECT user_id FROM extra_admins").fetchall()
+        db_admins = [r[0] for r in rows]
+    return list(set(ADMIN_IDS + db_admins))
+
+
+def is_admin(user_id: int) -> bool:
+    return user_id in get_all_admins()
 
 
 def get_user(user_id: int):
@@ -293,7 +314,7 @@ def main_menu_kb(user_id: int) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="📤 Вывод Звезд / NFT", callback_data="menu_withdraw"),
         ],
     ]
-    if user_id in ADMIN_IDS:
+    if is_admin(user_id):
         buttons.append(
             [InlineKeyboardButton(text="👑 АДМИН-ПАНЕЛЬ (/admins)", callback_data="admin_panel")]
         )
@@ -814,6 +835,7 @@ class AdminStates(StatesGroup):
     dm_text = State()
 
     broadcast_text = State()
+    new_admin_id = State()
 
 
 def admin_kb() -> InlineKeyboardMarkup:
@@ -823,6 +845,7 @@ def admin_kb() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="➕ Поставить рекламу (Часы / Уч. / Реф)", callback_data="adm_add_ad")],
             [InlineKeyboardButton(text="📊 Список рекламы (Прогресс / Удалить)", callback_data="adm_list_ads")],
             [InlineKeyboardButton(text="✉️ Написать челу лично в боте", callback_data="adm_dm_user")],
+            [InlineKeyboardButton(text="👑 Добавить / Удалить админа", callback_data="adm_manage_admins")],
             [InlineKeyboardButton(text=f"🔤 Сменить шрифт для ворка [{mode}]", callback_data="adm_toggle_font")],
             [
                 InlineKeyboardButton(text="📢 Рассылка всем", callback_data="adm_broadcast"),
@@ -840,6 +863,7 @@ def get_admin_stats_text() -> str:
         total_stars = conn.execute("SELECT COALESCE(SUM(stars), 0) FROM users").fetchone()[0]
     active_ads = len(get_active_ads())
     font_mode = get_font_mode()
+    admins_count = len(get_all_admins())
 
     text = (
         f"👑 <b>АДМИН-ПАНЕЛЬ QUASAR DROP (/admins)</b>\n\n"
@@ -847,6 +871,7 @@ def get_admin_stats_text() -> str:
         f"├ 🔥 Активных рефералов (с ТГК): <b>{active_refs} чел.</b>\n"
         f"├ ⭐ Звезд на балансах: <b>{total_stars:,} Stars</b>\n"
         f"├ 📢 Активной рекламы: <b>{active_ads} шт.</b>\n"
+        f"├ 👑 Админов в боте: <b>{admins_count} чел.</b>\n"
         f"└ 🔤 Текущий шрифт бота: <code>{font_mode}</code>\n\n"
         f"💡 <i>Команды: /restore_count 283 (добавить юзеров в стату), /db (скачать базу)</i>"
     )
@@ -856,10 +881,10 @@ def get_admin_stats_text() -> str:
 @router.message(Command("admins"))
 async def cmd_admins(message: Message):
     register_user(message.from_user.id, message.from_user.username, message.from_user.first_name)
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_admin(message.from_user.id):
         await message.answer(
             f"⚠️ Ваш Telegram ID: <code>{message.from_user.id}</code>.\n"
-            f"Добавьте его в переменную окружения <code>ADMIN_IDS</code> на Render, чтобы открыть админку."
+            f"У вас нет прав администратора."
         )
         return
     await message.answer(get_admin_stats_text(), reply_markup=admin_kb())
@@ -867,15 +892,60 @@ async def cmd_admins(message: Message):
 
 @router.callback_query(F.data == "admin_panel")
 async def cb_admin_panel(call: CallbackQuery, state: FSMContext):
-    if call.from_user.id not in ADMIN_IDS:
+    if not is_admin(call.from_user.id):
         return
     await state.clear()
     await call.message.edit_text(get_admin_stats_text(), reply_markup=admin_kb())
 
 
+@router.callback_query(F.data == "adm_manage_admins")
+async def cb_adm_manage_admins(call: CallbackQuery, state: FSMContext):
+    if not is_admin(call.from_user.id):
+        return
+    await state.set_state(AdminStates.new_admin_id)
+    all_adms = get_all_admins()
+    admins_list = ", ".join([f"<code>{a}</code>" for a in all_adms])
+    await call.message.edit_text(
+        f"👑 <b>УПРАВЛЕНИЕ АДМИНАМИ</b>\n\n"
+        f"Текущие админы ({len(all_adms)}): {admins_list}\n\n"
+        f"Отправьте <b>Telegram ID</b> пользователя, чтобы сделать его админом (или удалить, если он уже в списке):",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton(text="❌ Отмена", callback_data="admin_panel")]]
+        ),
+    )
+
+
+@router.message(AdminStates.new_admin_id)
+async def step_add_admin(message: Message, state: FSMContext):
+    if not is_admin(message.from_user.id):
+        return
+    if not message.text or not message.text.strip().isdigit():
+        await message.answer("❌ Введите корректный числовой Telegram ID!")
+        return
+    target_id = int(message.text.strip())
+    await state.clear()
+
+    all_adms = get_all_admins()
+    with sqlite3.connect(DB_PATH) as conn:
+        if target_id in all_adms:
+            if len(all_adms) <= 1 or target_id in ADMIN_IDS:
+                await message.answer(
+                    "❌ Нельзя удалить главного владельца (прописанного в Render) или единственного админа!",
+                    reply_markup=admin_kb(),
+                )
+                return
+            conn.execute("DELETE FROM extra_admins WHERE user_id = ?", (target_id,))
+            conn.commit()
+            await message.answer(f"🗑 Пользователь <code>{target_id}</code> снят с админки!", reply_markup=admin_kb())
+        else:
+            conn.execute("INSERT OR IGNORE INTO extra_admins (user_id) VALUES (?)", (target_id,))
+            conn.commit()
+            await message.answer(f"✅ Пользователь <code>{target_id}</code> назначен администратором!", reply_markup=admin_kb())
+
+
 @router.callback_query(F.data == "adm_toggle_font")
 async def cb_adm_toggle_font(call: CallbackQuery):
-    if call.from_user.id not in ADMIN_IDS:
+    if not is_admin(call.from_user.id):
         return
     modes = ["normal", "mono", "bold", "double", "smallcaps"]
     current = get_font_mode()
@@ -891,7 +961,7 @@ async def cb_adm_toggle_font(call: CallbackQuery):
 
 @router.callback_query(F.data == "adm_dm_user")
 async def cb_adm_dm_start(call: CallbackQuery, state: FSMContext):
-    if call.from_user.id not in ADMIN_IDS:
+    if not is_admin(call.from_user.id):
         return
     await state.set_state(AdminStates.dm_user_id)
     await call.message.edit_text(
@@ -941,7 +1011,7 @@ async def step_dm_send(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "adm_add_ad")
 async def cb_adm_add_ad(call: CallbackQuery, state: FSMContext):
-    if call.from_user.id not in ADMIN_IDS:
+    if not is_admin(call.from_user.id):
         return
     await state.set_state(AdminStates.ad_title)
     await call.message.edit_text(
@@ -1033,7 +1103,7 @@ async def step_ad_limit(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "adm_list_ads")
 async def cb_adm_list_ads(call: CallbackQuery):
-    if call.from_user.id not in ADMIN_IDS:
+    if not is_admin(call.from_user.id):
         return
     ads = get_active_ads()
     if not ads:
@@ -1053,7 +1123,7 @@ async def cb_adm_list_ads(call: CallbackQuery):
 
 @router.callback_query(F.data.startswith("del_ad_"))
 async def cb_del_ad(call: CallbackQuery):
-    if call.from_user.id not in ADMIN_IDS:
+    if not is_admin(call.from_user.id):
         return
     ad_id = int(call.data.split("_")[-1])
     with sqlite3.connect(DB_PATH) as conn:
@@ -1065,7 +1135,7 @@ async def cb_del_ad(call: CallbackQuery):
 
 @router.callback_query(F.data == "adm_broadcast")
 async def cb_adm_broadcast(call: CallbackQuery, state: FSMContext):
-    if call.from_user.id not in ADMIN_IDS:
+    if not is_admin(call.from_user.id):
         return
     await state.set_state(AdminStates.broadcast_text)
     await call.message.edit_text(
@@ -1096,7 +1166,7 @@ async def step_broadcast_send(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "adm_export_db")
 async def cb_adm_export_db(call: CallbackQuery):
-    if call.from_user.id not in ADMIN_IDS:
+    if not is_admin(call.from_user.id):
         return
     with sqlite3.connect(DB_PATH) as conn:
         rows = conn.execute(
@@ -1119,7 +1189,7 @@ async def cb_adm_export_db(call: CallbackQuery):
 # =====================================================================
 @router.message(Command("restore_count"))
 async def cmd_restore_count(message: Message, command: CommandObject):
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_admin(message.from_user.id):
         return
     count = int(command.args) if (command.args and command.args.isdigit()) else 283
     with sqlite3.connect(DB_PATH) as conn:
@@ -1137,7 +1207,7 @@ async def cmd_restore_count(message: Message, command: CommandObject):
 
 @router.message(Command("db"))
 async def cmd_get_db_file(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_admin(message.from_user.id):
         return
     if os.path.exists(DB_PATH):
         with open(DB_PATH, "rb") as f:
@@ -1150,7 +1220,7 @@ async def cmd_get_db_file(message: Message):
 
 @router.message(F.document)
 async def restore_db_from_file(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_admin(message.from_user.id):
         return
     if message.document.file_name == "quasar_drop.db":
         file = await bot.get_file(message.document.file_id)
