@@ -107,6 +107,11 @@ def _transform_chunk(chunk: str, mode: str) -> str:
 # 🗄 БАЗА ДАННЫХ SQLITE
 # =====================================================================
 def init_db():
+try:
+        cursor.execute("ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT ''")
+        conn.commit()
+    except Exception:
+        pass
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
         c.execute(
